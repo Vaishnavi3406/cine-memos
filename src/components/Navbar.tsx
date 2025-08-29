@@ -27,10 +27,6 @@ const Navbar = () => {
     enabled: !!user?.id
   });
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
-
   const navLinks = [
     { href: "/", label: "Home", icon: FileText },
     ...(user ? [{ href: "/history", label: "History", icon: History }] : []),
