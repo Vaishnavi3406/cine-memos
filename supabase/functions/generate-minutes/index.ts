@@ -28,8 +28,8 @@ serve(async (req) => {
       headers: {
         'Authorization': `Bearer ${openrouterApiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://cine-memos.lovable.app',
-        'X-Title': 'CineMemos - Meeting Minutes Generator'
+        'HTTP-Referer': 'https://zapnote.lovable.app',
+        'X-Title': 'ZapNote - Meeting Minutes Generator'
       },
       body: JSON.stringify({
         model: 'openai/gpt-3.5-turbo',

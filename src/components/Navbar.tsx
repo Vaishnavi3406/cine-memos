@@ -6,6 +6,9 @@ import { FileText, History, Settings, LogOut, Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -37,6 +40,44 @@ const Navbar = () => {
     await supabase.auth.signOut();
   };
 
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSignIn = async () => {
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      setAuthOpen(false);
+      setEmail("");
+      setPassword("");
+    } catch (e: any) {
+      setAuthError(e.message || "Sign in failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      setAuthOpen(false);
+      setEmail("");
+      setPassword("");
+    } catch (e: any) {
+      setAuthError(e.message || "Sign up failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const navLinks = [
     { href: "/", label: "Home", icon: FileText },
     { href: "/history", label: "History", icon: History },
@@ -53,7 +94,7 @@ const Navbar = () => {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-primary to-secondary">
               <FileText className="h-5 w-5 text-white" />
             </div>
-            <span className="font-poppins text-xl font-bold gradient-text">CineMemos</span>
+            <span className="font-poppins text-xl font-bold gradient-text">ZapNote</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -100,9 +141,51 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button className="glow-box film-button">
-                Sign In
-              </Button>
+              <Dialog open={authOpen} onOpenChange={setAuthOpen}>
+                <DialogTrigger asChild>
+                  <Button className="glow-box film-button">Sign In / Sign Up</Button>
+                </DialogTrigger>
+                <DialogContent className="bg-card/95 backdrop-blur-xl border-glow">
+                  <DialogHeader>
+                    <DialogTitle className="gradient-text">Welcome to ZapNote</DialogTitle>
+                  </DialogHeader>
+                  <Tabs defaultValue="signin" className="mt-4">
+                    <TabsList className="bg-card/50 border-glow grid grid-cols-2">
+                      <TabsTrigger value="signin" className="film-button">Sign In</TabsTrigger>
+                      <TabsTrigger value="signup" className="film-button">Sign Up</TabsTrigger>
+                    </TabsList>
+                    <div className="mt-4 space-y-3">
+                      <Input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="bg-background/60 border-glow"
+                      />
+                      <Input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="bg-background/60 border-glow"
+                      />
+                      {authError && (
+                        <p className="text-sm text-destructive">{authError}</p>
+                      )}
+                    </div>
+                    <TabsContent value="signin" className="mt-4">
+                      <Button className="w-full glow-box film-button" onClick={handleSignIn} disabled={authLoading}>
+                        {authLoading ? 'Signing in...' : 'Sign In'}
+                      </Button>
+                    </TabsContent>
+                    <TabsContent value="signup" className="mt-4">
+                      <Button className="w-full glow-box film-button" onClick={handleSignUp} disabled={authLoading}>
+                        {authLoading ? 'Creating account...' : 'Create Account'}
+                      </Button>
+                    </TabsContent>
+                  </Tabs>
+                </DialogContent>
+              </Dialog>
             )}
           </div>
 
@@ -146,9 +229,51 @@ const Navbar = () => {
                   Sign Out
                 </Button>
               ) : (
-                <Button className="glow-box film-button">
-                  Sign In
-                </Button>
+                <Dialog open={authOpen} onOpenChange={setAuthOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="glow-box film-button">Sign In / Sign Up</Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card/95 backdrop-blur-xl border-glow">
+                    <DialogHeader>
+                      <DialogTitle className="gradient-text">Welcome to ZapNote</DialogTitle>
+                    </DialogHeader>
+                    <Tabs defaultValue="signin" className="mt-4">
+                      <TabsList className="bg-card/50 border-glow grid grid-cols-2">
+                        <TabsTrigger value="signin" className="film-button">Sign In</TabsTrigger>
+                        <TabsTrigger value="signup" className="film-button">Sign Up</TabsTrigger>
+                      </TabsList>
+                      <div className="mt-4 space-y-3">
+                        <Input
+                          type="email"
+                          placeholder="Email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="bg-background/60 border-glow"
+                        />
+                        <Input
+                          type="password"
+                          placeholder="Password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="bg-background/60 border-glow"
+                        />
+                        {authError && (
+                          <p className="text-sm text-destructive">{authError}</p>
+                        )}
+                      </div>
+                      <TabsContent value="signin" className="mt-4">
+                        <Button className="w-full glow-box film-button" onClick={handleSignIn} disabled={authLoading}>
+                          {authLoading ? 'Signing in...' : 'Sign In'}
+                        </Button>
+                      </TabsContent>
+                      <TabsContent value="signup" className="mt-4">
+                        <Button className="w-full glow-box film-button" onClick={handleSignUp} disabled={authLoading}>
+                          {authLoading ? 'Creating account...' : 'Create Account'}
+                        </Button>
+                      </TabsContent>
+                    </Tabs>
+                  </DialogContent>
+                </Dialog>
               )}
             </div>
           </div>

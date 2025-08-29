@@ -89,6 +89,12 @@ const Hero = () => {
             <Button 
               size="lg" 
               className="text-lg px-8 py-6 glow-box film-button animate-pulse-glow"
+              onClick={() => {
+                const el = document.getElementById('upload-section');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }}
             >
               <Upload className="mr-2 h-5 w-5" />
               Try Now - Upload Transcript
