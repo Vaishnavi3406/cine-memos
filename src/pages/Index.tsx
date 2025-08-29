@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import UploadBox from "@/components/UploadBox";
@@ -13,14 +15,15 @@ const Index = () => {
   const [meetingTitle, setMeetingTitle] = useState('');
   const [meetingData, setMeetingData] = useState<any>(null);
   const { toast } = useToast();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      return user;
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
     }
-  });
+  }, [user, loading, navigate]);
 
   const handleTranscriptReady = async (transcriptText: string, title: string) => {
     setTranscript(transcriptText);
@@ -49,7 +52,7 @@ const Index = () => {
 
       console.log('Generated minutes:', data);
 
-      // Save to database if user is logged in
+      // Save to database (user is guaranteed to be logged in at this point)
       if (user) {
         const { data: savedMeeting, error: saveError } = await supabase
           .from('meetings')
@@ -62,7 +65,7 @@ const Index = () => {
             minutes_table: data.minutes_table,
             participants: data.minutes_json?.participants || [],
             ai_meta: {
-              model: 'gpt-3.5-turbo',
+              model: 'openrouter',
               processed_at: new Date().toISOString()
             }
           })
@@ -71,6 +74,11 @@ const Index = () => {
 
         if (saveError) {
           console.error('Error saving meeting:', saveError);
+          toast({
+            title: "Warning",
+            description: "Minutes generated but couldn't save to database. You can still export your minutes.",
+            variant: "destructive",
+          });
         } else {
           console.log('Meeting saved:', savedMeeting);
           setMeetingData(savedMeeting);
@@ -109,6 +117,18 @@ const Index = () => {
     setMeetingTitle('');
     setMeetingData(null);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background film-grain flex items-center justify-center">
+        <div className="animate-spin w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect to auth
+  }
 
   return (
     <div className="min-h-screen bg-background film-grain">

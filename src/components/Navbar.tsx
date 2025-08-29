@@ -2,22 +2,16 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { FileText, History, Settings, LogOut, Menu, X } from "lucide-react";
+import { FileText, History, Settings, LogOut, Menu, X, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      return user;
-    }
-  });
+  const { user, signOut, loading } = useAuth();
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -39,7 +33,7 @@ const Navbar = () => {
 
   const navLinks = [
     { href: "/", label: "Home", icon: FileText },
-    { href: "/history", label: "History", icon: History },
+    ...(user ? [{ href: "/history", label: "History", icon: History }] : []),
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -76,33 +70,38 @@ const Navbar = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={profile?.avatar_url} alt={profile?.name || "User"} />
-                      <AvatarFallback className="bg-gradient-to-r from-primary to-secondary text-white">
-                        {profile?.name?.[0] || user.email?.[0] || "U"}
-                      </AvatarFallback>
-                    </Avatar>
+            {!loading && (
+              user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={profile?.avatar_url} alt={profile?.name || "User"} />
+                        <AvatarFallback className="bg-gradient-to-r from-primary to-secondary text-white">
+                          {profile?.name?.[0] || user.email?.[0] || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 bg-card/95 backdrop-blur-xl border-glow" align="end">
+                    <DropdownMenuItem>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={signOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link to="/auth">
+                  <Button className="glow-box film-button">
+                    <User className="w-4 h-4 mr-2" />
+                    Sign In
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-card/95 backdrop-blur-xl border-glow" align="end">
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button className="glow-box film-button">
-                Sign In
-              </Button>
+                </Link>
+              )
             )}
           </div>
 
@@ -136,19 +135,24 @@ const Navbar = () => {
                   <span className="font-medium">{label}</span>
                 </Link>
               ))}
-              {user ? (
-                <Button 
-                  variant="ghost" 
-                  className="justify-start" 
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </Button>
-              ) : (
-                <Button className="glow-box film-button">
-                  Sign In
-                </Button>
+              {!loading && (
+                user ? (
+                  <Button 
+                    variant="ghost" 
+                    className="justify-start" 
+                    onClick={signOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </Button>
+                ) : (
+                  <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="glow-box film-button w-full justify-start">
+                      <User className="mr-2 h-4 w-4" />
+                      Sign In
+                    </Button>
+                  </Link>
+                )
               )}
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,8 +10,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar, Search, Filter, Download, Share2, Star, Trash2, Eye, Clock, Users, Tag, FileText, Play, Grid, List } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 
 const History = () => {
@@ -21,12 +23,20 @@ const History = () => {
   const [dateFilter, setDateFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('all');
   const [sortBy, setSortBy] = useState('updated_at');
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
 
   const { data: meetings, isLoading } = useQuery({
-    queryKey: ['meetings', searchQuery, dateFilter, tagFilter, sortBy],
+    queryKey: ['meetings', searchQuery, dateFilter, tagFilter, sortBy, user?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) return [];
 
       let query = supabase
         .from('meetings')
@@ -36,6 +46,7 @@ const History = () => {
           meeting_versions (id, version, created_at),
           activity_log (action, created_at)
         `)
+        .eq('owner', user.id)
         .is('deleted_at', null)
         .order(sortBy, { ascending: false });
 
@@ -46,7 +57,8 @@ const History = () => {
       const { data, error } = await query;
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!user,
   });
 
   const handleBulkAction = (action: string) => {
@@ -117,6 +129,18 @@ const History = () => {
       </div>
     </SheetContent>
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background film-grain flex items-center justify-center">
+        <div className="animate-spin w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect to auth
+  }
 
   return (
     <div className="min-h-screen bg-background film-grain">
