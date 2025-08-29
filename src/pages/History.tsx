@@ -49,6 +49,22 @@ const History = () => {
     }
   });
 
+  const extractTextFromHtml = (html: string) => {
+    if (!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const text = div.textContent || div.innerText || '';
+    return text.replace(/\s+/g, ' ').trim();
+  };
+
+  const getMeetingSummary = (meeting: any) => {
+    const agenda = meeting.minutes_json?.agenda_summary;
+    if (agenda && typeof agenda === 'string' && agenda.trim().length > 0) return agenda.trim();
+    const html = meeting.minutes_html || meeting.minutes_json?.html_output;
+    const text = extractTextFromHtml(html || '');
+    return text.slice(0, 220) + (text.length > 220 ? '…' : '');
+  };
+
   const handleBulkAction = (action: string) => {
     console.log(`Bulk ${action} for meetings:`, selectedMeetings);
     // Implement bulk actions
@@ -264,6 +280,13 @@ const History = () => {
                         </div>
                       </div>
                       
+                      {/* Summary Preview */}
+                      <div className="p-3 rounded-md bg-background/50 border border-white/10">
+                        <p className="text-sm text-foreground line-clamp-4">
+                          {getMeetingSummary(meeting)}
+                        </p>
+                      </div>
+
                       {meeting.participants.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {meeting.participants.slice(0, 3).map((participant: string, idx: number) => (
@@ -320,6 +343,7 @@ const History = () => {
                     </TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Date</TableHead>
+                    <TableHead className="max-w-[380px]">Summary</TableHead>
                     <TableHead>Participants</TableHead>
                     <TableHead>Tags</TableHead>
                     <TableHead>Last Modified</TableHead>
@@ -343,6 +367,11 @@ const History = () => {
                       </TableCell>
                       <TableCell className="font-medium">{meeting.title}</TableCell>
                       <TableCell>{new Date(meeting.date).toLocaleDateString()}</TableCell>
+                      <TableCell className="max-w-[380px]">
+                        <span className="block text-sm text-muted-foreground line-clamp-2">
+                          {getMeetingSummary(meeting)}
+                        </span>
+                      </TableCell>
                       <TableCell>{meeting.participants.length}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
